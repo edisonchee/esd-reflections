@@ -1,3 +1,9 @@
+var getButton;
+var reflectionCards = [];
+var reflectionCardIds = [];
+var commentCards = [];
+var members = new Object();
+
 document.addEventListener("DOMContentLoaded", () => {
   window.Trello.authorize({
     type: 'popup',
@@ -9,12 +15,8 @@ document.addEventListener("DOMContentLoaded", () => {
     success: authenticationSuccess,
     error: authenticationFailure
   });
+  getButton = document.getElementById("getCards");
 });
-
-var reflectionCards = [];
-var reflectionCardIds = [];
-var commentCards = [];
-var members = new Object();
 
 let authenticationSuccess = function() {
   console.log('Successful authentication');
@@ -25,13 +27,18 @@ let authenticationFailure = function() {
 };
 
 let getCards = () => {
+  console.log("Getting cards...");
+  getButton.classList.add("loading");
+  getButton.removeAttribute("onclick");
+  getButton.innerHTML = "loading...";
   window.Trello.get('boards/G7BJhQRb/cards/', 
   data => {
     data.forEach(card => {
       // card.url instead of card.name so I don't have to deal with capitalisation
       card.url.includes("reflection") ? (reflectionCardIds.push(card.id), reflectionCards.push(card)) : '';
     });
-    console.log(reflectionCards);
+    console.log("Success!");
+    getCommentCards();
   },
   error => {
     console.log(error);
@@ -40,24 +47,31 @@ let getCards = () => {
 }
 
 let getCommentCards = () => {
-  reflectionCardIds.forEach(cardId => {
+  console.log("Getting comments from cards...");
+  const promises = reflectionCardIds.map(cardId => new Promise((resolve, reject) => {
     window.Trello.get(`cards/${cardId}/actions?filter=commentCard`,
     commentCard => {
       commentCards.push(commentCard);
+      resolve(commentCard);
     },
     error => {
       console.log(error);
+      reject(error);
     })
+  }))
+  Promise.all(promises).then(results => {
+    console.log("Success!");
+    commentCards = commentCards.filter(arr => arr.length);
+    sortIntoMembers();
   })
 }
 
 let removeEmptyArrs = () => {
-  console.log(commentCards.length);
   commentCards = commentCards.filter(arr => arr.length);
-  console.log(commentCards.length);
 }
 
 let sortIntoMembers = () => {
+  console.log("Populating DOM...");
   commentCards.forEach(commentArr => {
     commentArr.forEach(commentObj => {
       // data.text, date, id, idMemberCreator
@@ -82,10 +96,8 @@ let sortIntoMembers = () => {
       }
     })
   })
-  console.log(members);
   let list = document.getElementById("list");
   for (let [member, obj] of Object.entries(members)) {
-    // console.log(`${key}: ${value}`);
     let newUL = document.createElement("ul");
     let newH2 = document.createElement("h2");
     let memberNameText = document.createTextNode(`${obj.fullName}`); 
@@ -100,4 +112,8 @@ let sortIntoMembers = () => {
       newUL.append(newLI);
     })
   }
+  console.log("Success!");
+  getButton.classList.remove("loading");
+  getButton.setAttribute("onclick", "getCards()");
+  getButton.innerHTML = "Get";
 }
