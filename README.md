@@ -13,11 +13,10 @@ From:
 
 To:
 ```html
-<script src="https://api.trello.com/1/client.js?key={fBm6He90bHidSmF68z82e07XbpElY6tB}"></script>
+<script src="https://api.trello.com/1/client.js?key=fBm6He90bHidSmF68z82e07XbpElY6tB"></script>
 ```
 
 ### 3. Start Python HTTP Server in `src` folder
 ```sh
-cd src
-http python3 -m http.server 8000
+python3 -m http.server 8000
 ```
